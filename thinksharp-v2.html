@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ThinkSharp — Critical Thinking Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Fraunces:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { background: #111118; }
+  body { background: #111118; color: #E4E4ED; font-family: 'Outfit', sans-serif; min-height: 100vh; min-height: 100dvh; overflow-x: hidden; display: flex; justify-content: center; }
+  #root { width: 100%; max-width: 480px; min-height: 100vh; min-height: 100dvh; position: relative; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  button { font-family: 'Outfit', sans-serif; }
+  button:active { transform: scale(0.97) !important; }
+  ::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+/* ═══════════════════════════════════════════
+   THEME - Warm dark with teal accent
+   ═══════════════════════════════════════════ */
+const T = {
+  bg: "#111118",
+  surface: "#1B1B24",
+  surfaceRaised: "#222230",
+  card: "#1E1E2A",
+  cardHover: "#252535",
+  accent: "#2DD4A8",        // Teal-mint
+  accentDark: "#1A9E7A",
+  accentSoft: "rgba(45,212,168,0.12)",
+  accentGlow: "rgba(45,212,168,0.35)",
+  secondary: "#5B8DEF",     // Soft blue
+  secondarySoft: "rgba(91,141,239,0.12)",
+  success: "#2DD4A8",
+  successSoft: "rgba(45,212,168,0.12)",
+  warn: "#F0C246",
+  warnSoft: "rgba(240,194,70,0.12)",
+  error: "#EF6B6B",
+  errorSoft: "rgba(239,107,107,0.12)",
+  text: "#E4E4ED",
+  textSoft: "#B0B0C4",
+  textMuted: "#7A7A94",
+  textDim: "#4E4E66",
+  border: "rgba(255,255,255,0.07)",
+  borderLight: "rgba(255,255,255,0.12)",
+  gradientText: "linear-gradient(135deg, #2DD4A8, #5B8DEF)",
+};
+
+/* ═══════════════════════════════════════════
+   FRAMEWORK DATA
+   ═══════════════════════════════════════════ */
+const FRAMEWORKS = [
+  {
+    id: "pyramid", icon: "△", title: "The Pyramid Principle",
+    subtitle: "Master top-down structured thinking", color: "#2DD4A8",
+    description: "Created by Barbara Minto at McKinsey",
+    lessons: [
+      // --- INTRO ---
+      {
+        type: "learn", title: "The Origin Story",
+        content: "In the 1960s, Barbara Minto became the first female MBA hired by McKinsey & Company. While editing reports in the London office, she noticed she kept reorganizing ideas into the same shape — a pyramid. She developed this into a framework that's been taught at McKinsey ever since and is now used by every major consulting firm in the world.",
+        extraContent: "As Minto herself says: \"The pyramid is a tool to help you find out what you think. It forces you to pull out of your head information that you weren't aware was there, and then helps you develop and shape it until the thinking is crystal clear.\"",
+        visual: "origin",
+        keyInsight: "Fun fact: MECE (Mutually Exclusive, Collectively Exhaustive) was coined by Minto. She pronounces it 'meece' — rhyming with 'Greece.' As she says: 'I invented it, so I get to say how to pronounce it.'"
+      },
+      // --- CORE CONCEPT ---
+      {
+        type: "learn", title: "Lead with the Answer",
+        content: "Most people build up to their conclusion — presenting data, then analysis, then finally their recommendation. The Pyramid Principle flips this entirely. Start with your main point at the top, then support it with grouped arguments below.",
+        extraContent: "Think about it: a busy executive has minutes (sometimes seconds) of attention. If you bury your conclusion at the end, you risk losing them before you get there. The pyramid ensures they hear the most important thing first.",
+        visual: "pyramid",
+        keyInsight: "Your audience is busy. Give them the answer first, then the 'why' only if they want it. If you're right, they'll grasp it fast. If you're wrong, they can point out the flaw in your logic."
+      },
+      // --- SCQA ---
+      {
+        type: "learn", title: "The SCQA Framework",
+        content: "Every pyramid starts with a powerful introduction that hooks your audience. Minto's SCQA structure works like a story:",
+        bullets: [
+          { label: "Situation", desc: "Set the scene — what does the audience already know and agree with?" },
+          { label: "Complication", desc: "What happened to create a problem or opportunity?" },
+          { label: "Question", desc: "What decision or question does this naturally raise?" },
+          { label: "Answer", desc: "Your recommendation — the tip of the pyramid." },
+        ],
+        visual: "scqa",
+        keyInsight: "SCQA works because it mirrors how our brains process stories. The situation grounds us, the complication creates tension, the question focuses our thinking, and the answer resolves it."
+      },
+      // --- MECE ---
+      {
+        type: "learn", title: "MECE Grouping",
+        content: "The supporting arguments under your answer must be MECE: Mutually Exclusive (no overlaps) and Collectively Exhaustive (no gaps). Think of it like sorting laundry — every item goes in exactly one pile, and nothing is left on the floor.",
+        extraContent: "For example, if asked 'How do we increase profits?' a MECE answer is: (1) Increase revenues, (2) Decrease costs. These don't overlap, and there's no third path to profit. Now each of those becomes the top of its own sub-pyramid.",
+        visual: "mece",
+        keyInsight: "If your categories overlap or leave gaps, your thinking has holes. Test every grouping: 'Does each item fit in exactly one bucket? Does anything fall outside all the buckets?'"
+      },
+      // --- 1-10-1 METHOD ---
+      {
+        type: "learn", title: "The 1-10-1 Drafting Method",
+        content: "This is the fastest way to practice pyramid thinking in your daily writing. Use it for emails, memos, presentations — anything.",
+        bullets: [
+          { label: "1 — Key Message", desc: "Start with your conclusion or recommendation. One sentence." },
+          { label: "10 — Arguments", desc: "Provide 3-5 supporting points, logically ordered (by importance, chronology, or structure). These are your pyramid's middle layer." },
+          { label: "1 — Supporting Data", desc: "End with the core facts and data that back everything up. This is the base." },
+        ],
+        visual: "onetenone",
+        keyInsight: "Try this right now: take your last email and rewrite the first sentence as the conclusion. You'll be amazed how much clearer it becomes."
+      },
+      // --- SO WHAT DRILL ---
+      {
+        type: "learn", title: "The \"So What?\" Drill",
+        content: "This is the most powerful analytical exercise in the pyramid toolkit. Take any raw data point and repeatedly ask 'So what?' until you reach the real insight — the top of your pyramid.",
+        extraContent: "Example: 'Our website traffic dropped 30% last month' → So what? → 'We're generating fewer leads' → So what? → 'Our sales pipeline will dry up in Q2' → So what? → 'We need to reallocate $50K to digital marketing immediately.' That last statement is the top of your pyramid.",
+        visual: "sowhat",
+        keyInsight: "Most people present the first data point and stop. The 'So What?' drill forces you to climb from data → insight → action. The action is your pyramid's tip."
+      },
+      // --- EXERCISE: Fix Email ---
+      {
+        type: "exercise", title: "Fix This Email",
+        scenario: "Your colleague wrote this email to their VP requesting budget for a new tool. The sentences are in the wrong order. What should come FIRST in a proper pyramid structure?",
+        pieces: [
+          { id: "a", text: "We should invest $50K in the new analytics platform.", level: 0, order: 0 },
+          { id: "b", text: "It will save 20 hours/week of manual reporting.", level: 1, order: 1 },
+          { id: "c", text: "Three competitors already use it and are outpacing us.", level: 1, order: 2 },
+          { id: "d", text: "The current system crashes twice a month, costing us client trust.", level: 1, order: 3 },
+        ],
+        scrambledOrder: [2, 3, 0, 1],
+      },
+      // --- EXERCISE: Build Pyramid ---
+      {
+        type: "exercise", title: "Build a Pyramid",
+        scenario: "Your friend asks: 'Should I take the new job offer?' Which is the strongest pyramid structure?",
+        options: [
+          { label: "A", structure: "Yes, take it → Higher pay + Better role + Shorter commute", correct: true, feedback: "Clean pyramid — one clear answer supported by three distinct, non-overlapping reasons. That's MECE!" },
+          { label: "B", structure: "It pays more → You'd learn new skills → The commute is shorter → So maybe take it", correct: false, feedback: "This buries the answer at the end. A busy listener would be waiting for the point the whole time." },
+          { label: "C", structure: "The job is good → It pays well and the salary is higher → Better culture", correct: false, feedback: "'Pays well' and 'salary is higher' are the same thing — that's an overlap, which violates MECE!" }
+        ]
+      },
+      // --- EXERCISE: So What ---
+      {
+        type: "exercise", title: "Practice: So What? Drill",
+        scenario: "A data analyst presents: 'Customer churn increased from 5% to 12% this quarter.' What's the best 'So What?' response that climbs toward an actionable insight?",
+        options: [
+          { label: "A", structure: "That's bad — churn is too high.", correct: false, feedback: "This restates the problem. 'So What?' means pushing to the implication or action." },
+          { label: "B", structure: "If the trend continues, we'll lose 30% of our revenue base by Q4 — we need to diagnose whether it's pricing, product, or support and act this month.", correct: true, feedback: "Excellent — you projected the impact AND structured next steps. This is ready to be the top of a pyramid." },
+          { label: "C", structure: "We should survey customers to understand why.", correct: false, feedback: "This jumps to a tactic without framing the business impact. A VP would ask 'why should I care?' first." }
+        ]
+      },
+      // --- EXERCISE: SCQA ---
+      {
+        type: "exercise", title: "Practice: SCQA Introduction",
+        scenario: "You need to present a recommendation to invest in AI automation. Which SCQA introduction is best structured?",
+        options: [
+          { label: "A", structure: "S: Our ops team processes 10K orders/day manually. C: Volume will double next year and we can't hire fast enough. Q: How do we scale without doubling headcount? A: Invest $200K in AI automation for 60% efficiency gain.", correct: true, feedback: "Perfect SCQA — each element flows naturally into the next, and the answer is specific and actionable." },
+          { label: "B", structure: "AI is transforming business. We should use AI. Our competitors use it. Let's invest $200K.", correct: false, feedback: "This jumps around without the narrative flow. There's no situation/complication to ground the audience." },
+          { label: "C", structure: "We process 10K orders daily. Next year it'll be 20K. We need more people or automation. I recommend automation.", correct: false, feedback: "Close, but the complication isn't sharp enough and the answer lacks specificity. Why automation? What's the ROI?" }
+        ]
+      },
+      // --- ADVANCED ---
+      {
+        type: "learn", title: "Advanced: Recursive Pyramids",
+        content: "In advanced usage, each supporting argument at the base of your main pyramid becomes the apex of its OWN sub-pyramid. This creates 'recursive pyramids' — nested structures that can handle any level of complexity while staying clear.",
+        extraContent: "This is the 'Message House' method: your top-level assertion is the roof, 3-4 mutually exclusive arguments are the pillars, and each pillar rests on its own foundation of data. Think of Amazon's 'Working Backwards' approach — they write the press release (the tip) first, then build the supporting case underneath.",
+        visual: "recursive",
+        keyInsight: "Vertical logic means every point above summarizes the points below it. Horizontal logic means all points at the same level are MECE and in logical order. Master both and you can structure anything."
+      },
+      // --- ADVANCED EXERCISE ---
+      {
+        type: "exercise", title: "Advanced: Hypothesis-Driven Thinking",
+        scenario: "Your team is investigating why a retail chain's profits dropped. Using hypothesis-driven thinking (the Pyramid Principle applied to analysis), what's the best approach?",
+        options: [
+          { label: "A", structure: "Start with a hypothesis: 'Profits dropped due to rising supply costs' — then structure sub-hypotheses to test: raw materials, logistics, labor — and assign data collection to each.", correct: true, feedback: "This is textbook hypothesis-driven thinking. You start at the tip and work down, testing each branch. Much faster than gathering all data first." },
+          { label: "B", structure: "Collect all available financial data first, then analyze it to find patterns.", correct: false, feedback: "This is 'boiling the ocean' — gathering everything before forming a view. It's slow and unfocused." },
+          { label: "C", structure: "Ask the CFO what they think happened.", correct: false, feedback: "Expert input is valuable but this skips your own structured analysis. What if the CFO is wrong?" }
+        ]
+      },
+    ]
+  },
+  {
+    id: "steelman", icon: "⚔", title: "Steel Manning",
+    subtitle: "Strengthen opposing arguments", color: "#5B8DEF",
+    description: "The antidote to weak thinking",
+    lessons: [
+      {
+        type: "learn", title: "What is Steel Manning?",
+        content: "A 'straw man' weakens someone's argument to make it easy to attack. Steel manning does the opposite — you build the STRONGEST possible version of the argument you disagree with.",
+        extraContent: "This forces deeper thinking and earns you credibility. In consulting, if you can't articulate why someone might disagree with your recommendation, your analysis isn't complete.",
+        visual: "steelman",
+        keyInsight: "If you can't argue the other side convincingly, you don't fully understand the issue."
+      },
+      {
+        type: "exercise", title: "Steel This Argument",
+        scenario: "Someone says: 'Social media is bad for society.' That's a straw man version. Which is the best steel man?",
+        options: [
+          { label: "A", structure: "Social media is terrible and should be banned completely.", correct: false, feedback: "This actually makes the argument weaker and more extreme — that's a straw man!" },
+          { label: "B", structure: "Social media's engagement-driven design can amplify misinformation and erode attention spans, and the mental health data on teens is concerning enough to warrant design changes.", correct: true, feedback: "Excellent — this is specific, nuanced, evidence-aware, and acknowledges the strongest version of the concern." },
+          { label: "C", structure: "Some people waste too much time on their phones scrolling social media.", correct: false, feedback: "This is weaker than the original — it reduces a systemic argument to individual behavior." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "assumptions", icon: "🔍", title: "Assumption Surfacing",
+    subtitle: "Find what's hidden in plain sight", color: "#F0C246",
+    description: "Uncover the invisible foundations",
+    lessons: [
+      {
+        type: "learn", title: "Hidden Assumptions",
+        content: "Every plan, argument, and decision rests on assumptions — things we take as true without checking. Surfacing assumptions means pulling them into the light so you can test them.",
+        extraContent: "Most bad decisions aren't wrong — they're built on unchecked assumptions. The plan was logical given what people believed. The problem is nobody questioned what they believed.",
+        visual: "assumptions",
+        keyInsight: "The most dangerous assumptions are the ones nobody thinks to question."
+      },
+      {
+        type: "exercise", title: "Spot the Assumptions",
+        scenario: "A startup founder says: 'We'll launch our food delivery app in 3 months and capture 10% of the local market in year one.' What assumptions are hiding here?",
+        options: [
+          { label: "A", structure: "The team can build and ship the app in 3 months with the current resources.", correct: true, feedback: "Yes — this is a big technical and resource assumption." },
+          { label: "B", structure: "There is enough unmet demand that a new entrant can win 10% share.", correct: true, feedback: "Exactly — they're assuming the market isn't already saturated." },
+          { label: "C", structure: "The founder is a hard worker.", correct: false, feedback: "This isn't really a hidden assumption in the plan — it's a character judgment." },
+          { label: "D", structure: "Customers will switch from existing apps without heavy incentives.", correct: true, feedback: "Spot on — switching costs are a critical hidden assumption." }
+        ],
+        multiSelect: true
+      }
+    ]
+  },
+  {
+    id: "firstprinciples", icon: "⚛", title: "First Principles",
+    subtitle: "Break it down to the fundamentals", color: "#EF6B6B",
+    description: "Think from scratch, not from convention",
+    lessons: [
+      {
+        type: "learn", title: "Reasoning from Scratch",
+        content: "Most thinking is by analogy: 'We do it this way because that's how it's done.' First principles thinking strips away assumptions to find the fundamental truths, then builds up from there.",
+        extraContent: "It's how SpaceX made rockets 10x cheaper — by asking 'what does a rocket actually need?' instead of 'what do rockets usually cost?' The raw materials for a rocket are only 2% of the typical price.",
+        visual: "firstprinciples",
+        keyInsight: "Convention tells you what IS. First principles tell you what's POSSIBLE."
+      },
+      {
+        type: "exercise", title: "Break It Down",
+        scenario: "Your team says: 'We can't afford to hire a designer — agencies charge $150/hour.' Apply first principles. What's the best next question?",
+        options: [
+          { label: "A", structure: "What exactly do we need designed, and which tasks truly require a senior designer?", correct: true, feedback: "Perfect first principles thinking — you're decomposing the real need instead of accepting the framing." },
+          { label: "B", structure: "Can we find a cheaper agency?", correct: false, feedback: "This is still reasoning by analogy — you're accepting the 'agency' frame and just tweaking the price." },
+          { label: "C", structure: "What if we just skip design?", correct: false, feedback: "This isn't first principles — it's avoidance. The need for good design is likely a fundamental truth." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "sixhats", icon: "🎩", title: "Six Thinking Hats",
+    subtitle: "See every angle systematically", color: "#C084FC",
+    description: "Edward de Bono's perspective framework",
+    lessons: [
+      {
+        type: "learn", title: "One Hat at a Time",
+        content: "Edward de Bono's method: instead of everyone arguing from mixed perspectives, you all wear the same 'hat' at once.",
+        bullets: [
+          { label: "⬜ White", desc: "Facts and data only" },
+          { label: "🟥 Red", desc: "Gut feelings and emotions" },
+          { label: "⬛ Black", desc: "Risks and problems" },
+          { label: "🟨 Yellow", desc: "Benefits and optimism" },
+          { label: "🟩 Green", desc: "Creative new ideas" },
+          { label: "🟦 Blue", desc: "Process management" },
+        ],
+        visual: "sixhats",
+        keyInsight: "Arguments happen when people wear different hats at the same time. Align the hat, align the thinking."
+      },
+      {
+        type: "exercise", title: "Name That Hat",
+        scenario: "Your team is discussing whether to pivot the product. Match each statement to the correct thinking hat.",
+        matchPairs: [
+          { statement: "Our retention rate dropped 40% last quarter.", hat: "White Hat (Facts)", color: "#FFFFFF" },
+          { statement: "I have a bad feeling about this pivot.", hat: "Red Hat (Feelings)", color: "#EF6B6B" },
+          { statement: "What if we kept the core product but added a B2B tier?", hat: "Green Hat (Creative)", color: "#2DD4A8" },
+          { statement: "If we pivot, we risk losing our existing users.", hat: "Black Hat (Risks)", color: "#555" },
+        ]
+      }
+    ]
+  },
+  // ═══ CONSULTING ASSESSMENT PREP ═══
+  {
+    id: "assessments", icon: "📊", title: "Consulting Assessment Prep",
+    subtitle: "Pymetrics · Casey · SOVA · Solve", color: "#F97316",
+    description: "Prepare for MBB screening tests",
+    lessons: [
+      {
+        type: "learn", title: "The MBB Assessment Landscape",
+        content: "The 'Big Three' consulting firms — McKinsey, BCG, and Bain — each use online assessments to screen candidates before case interviews. These tests are designed to filter thousands of applicants efficiently, testing cognitive abilities, problem-solving, and personality traits.",
+        bullets: [
+          { label: "McKinsey → Solve", desc: "Game-based problem-solving assessment (ecosystem building, pattern recognition)" },
+          { label: "BCG → Pymetrics + Casey", desc: "Neuroscience-based mini-games (Pymetrics) + chatbot case interview (Casey)" },
+          { label: "Bain → SOVA", desc: "Numerical, verbal, and abstract reasoning under time pressure" },
+        ],
+        visual: "assessmentmap",
+        keyInsight: "60-80% of candidates are eliminated at the assessment stage. These aren't knowledge tests — they measure how you think, decide, and perform under pressure."
+      },
+      {
+        type: "learn", title: "Pymetrics: The 12 Mini-Games",
+        content: "Pymetrics is used by BCG, Bain, Accenture, JPMorgan, and many others. It's a series of 12 short neuroscience-based games (2-3 minutes each) that measure cognitive and emotional traits. There are no 'right answers' — instead, your profile is compared to successful consultants at that firm.",
+        bullets: [
+          { label: "Balloon Game", desc: "Measures risk tolerance — inflate a balloon for money, but it might pop" },
+          { label: "Money Exchange", desc: "Tests fairness and trust in economic decision-making" },
+          { label: "Towers Game", desc: "Evaluates planning and problem-solving (similar to Tower of Hanoi)" },
+          { label: "Faces Game", desc: "Measures emotional intelligence — read micro-expressions" },
+          { label: "Cards Game", desc: "Tests pattern recognition and learning from feedback" },
+          { label: "Arrows/Digits/Stop", desc: "Measure attention, focus, and impulse control" },
+        ],
+        visual: "pymetrics",
+        keyInsight: "The key traits measured: Decision-making, Risk tolerance, Attention, Focus, Effort, Emotion, Fairness, Generosity, and Learning. BCG says the test evaluates 91 cognitive traits across 9 categories."
+      },
+      {
+        type: "exercise", title: "Pymetrics Strategy Check",
+        scenario: "In the Balloon Game, you earn money each time you pump a balloon. But if it pops, you lose everything for that balloon. What strategy best matches successful consultant profiles?",
+        options: [
+          { label: "A", structure: "Pump every balloon to the maximum — go big or go home.", correct: false, feedback: "This signals excessive risk-taking. Consultants need to make calculated, measured decisions." },
+          { label: "B", structure: "Take moderate, consistent risk — pump to a reasonable level, cash out regularly, and learn from pops to calibrate.", correct: true, feedback: "Exactly. Consultants are calculated risk-takers. They assess probability, learn from outcomes, and adjust. Consistency matters." },
+          { label: "C", structure: "Always cash out after 1-2 pumps to minimize risk.", correct: false, feedback: "Too risk-averse. Consulting requires the courage to make bold recommendations when the data supports them." }
+        ]
+      },
+      {
+        type: "learn", title: "BCG Casey: The Chatbot Case",
+        content: "Casey is BCG's chatbot-driven case interview. You're given a business problem and have 25-30 minutes to answer 8-10 questions — a mix of multiple choice, numerical calculations, short written responses, and a 60-second video recommendation at the end.",
+        extraContent: "Casey tests the same skills as a live case interview: structuring problems, interpreting data and charts, doing quick math, and synthesizing a recommendation. A calculator is allowed, but the math is designed to be multi-step and conceptual — not just arithmetic.",
+        visual: "casey",
+        keyInsight: "The biggest trap: Casey doesn't give feedback between questions. You won't know if you got something wrong, so you must stay confident and move forward. Time management is everything — budget roughly 2-3 minutes per question."
+      },
+      {
+        type: "exercise", title: "Casey-Style: Data Interpretation",
+        scenario: "A ferry company's revenue has been flat for 3 years despite a 20% increase in tourists visiting the islands it serves. Ticket prices haven't changed. What's the most likely structural explanation?",
+        options: [
+          { label: "A", structure: "The ferry is already at full capacity — more tourists doesn't mean more passengers if boats are full.", correct: true, feedback: "Excellent consulting thinking. You identified a capacity constraint — the bottleneck that decouples demand from revenue. This is exactly the kind of structural insight Casey tests for." },
+          { label: "B", structure: "Tourists are using competitor ferries instead.", correct: false, feedback: "Possible, but this would imply declining market share, not flat revenue. And the question says the company's revenue is flat, not declining." },
+          { label: "C", structure: "The economy is in recession.", correct: false, feedback: "The question tells you tourism is UP 20%. A recession wouldn't explain flat revenue alongside growing demand." }
+        ]
+      },
+      {
+        type: "learn", title: "Bain SOVA & McKinsey Solve",
+        content: "Bain uses the SOVA assessment — a rapid-fire test of numerical reasoning, verbal reasoning, and abstract/logical reasoning. It's not conceptually hard, but the time pressure is brutal. Most people cannot finish.",
+        extraContent: "McKinsey Solve is a game-based assessment with scenarios like ecosystem building and pattern recognition. You might manage a virtual ecosystem, optimizing species placement, or analyze data to solve a geological mystery. It tests systems thinking, creative problem-solving, and data interpretation — not memorized frameworks.",
+        visual: "solvesova",
+        keyInsight: "For SOVA: speed beats perfection. Practice with GMAT-style quantitative reasoning under strict time limits. For Solve: practice systems thinking — how do interconnected variables affect each other?"
+      },
+      {
+        type: "exercise", title: "Solve-Style: Systems Thinking",
+        scenario: "In a virtual ecosystem, you need to sustain 8 species. Wolves eat deer. Deer eat grass. Grass needs water and sunlight. You can only place 5 of 8 species. Which principle should guide your selection?",
+        options: [
+          { label: "A", structure: "Pick species that form complete food chains with minimal dependencies — ensure every predator has prey, every prey has food, and resources are sufficient.", correct: true, feedback: "Systems thinking at its best. You're mapping dependencies, ensuring sustainability, and making the system self-supporting. This is exactly what McKinsey's Solve measures." },
+          { label: "B", structure: "Pick the 5 most interesting species.", correct: false, feedback: "Without considering dependencies, your ecosystem will collapse. A wolf without deer starves." },
+          { label: "C", structure: "Pick only herbivores to avoid predation.", correct: false, feedback: "Without predators, herbivore populations would explode and consume all vegetation. Ecosystems need balance." }
+        ]
+      },
+    ]
+  }
+];
+
+/* ═══════════════════════════════════════════
+   VISUAL COMPONENTS
+   ═══════════════════════════════════════════ */
+function VisualOrigin() {
+  return (
+    <div style={{ padding: "20px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ background: T.accentSoft, border: `1px solid ${T.accent}25`, borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.accent, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 6 }}>1963</div>
+        <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.5 }}>Barbara Minto joins McKinsey — first female MBA hire</div>
+      </div>
+      <div style={{ background: T.secondarySoft, border: `1px solid ${T.secondary}25`, borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.secondary, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 6 }}>1966-73</div>
+        <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.5 }}>Develops the Pyramid Principle while editing reports in London</div>
+      </div>
+      <div style={{ background: "rgba(240,194,70,0.12)", border: "1px solid rgba(240,194,70,0.25)", borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.warn, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 6 }}>1996</div>
+        <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.5 }}>Publishes definitive edition with problem-solving methodology</div>
+      </div>
+    </div>
+  );
+}
+
+function VisualPyramid() {
+  return (
+    <div style={{ textAlign: "center", padding: "16px 0" }}>
+      <svg width="260" height="170" viewBox="0 0 260 170" style={{ margin: "0 auto", display: "block" }}>
+        <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={T.accent}/><stop offset="100%" stopColor={T.secondary}/></linearGradient></defs>
+        <polygon points="130,12 70,72 190,72" fill="url(#tg)" opacity="0.85"><animate attributeName="opacity" values="0;0.85" dur="0.5s" fill="freeze"/></polygon>
+        <text x="130" y="52" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="Outfit">ANSWER</text>
+        {[{x:42,l:"Why #1"},{x:112,l:"Why #2"},{x:182,l:"Why #3"}].map((r,i)=>(
+          <g key={i}><rect x={r.x-30} y={80} width="60" height="30" rx="6" fill={T.accent} opacity="0.35"><animate attributeName="opacity" values="0;0.35" dur="0.4s" begin={`${0.2+i*0.1}s`} fill="freeze"/></rect>
+          <text x={r.x} y={99} textAnchor="middle" fill="#fff" fontSize="9" fontFamily="Outfit">{r.l}</text></g>
+        ))}
+        {[20,70,120,170,220].map((x,i)=>(
+          <g key={i}><rect x={x-18} y={118} width="36" height="26" rx="5" fill={T.accent} opacity="0.18"><animate attributeName="opacity" values="0;0.18" dur="0.4s" begin={`${0.5+i*0.08}s`} fill="freeze"/></rect>
+          <text x={x} y={135} textAnchor="middle" fill={T.textMuted} fontSize="8" fontFamily="Outfit">Data</text></g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function VisualSCQA() {
+  const items = [
+    { letter: "S", label: "Situation", desc: "Set the scene", color: T.secondary },
+    { letter: "C", label: "Complication", desc: "The problem", color: T.warn },
+    { letter: "Q", label: "Question", desc: "The decision", color: "#C084FC" },
+    { letter: "A", label: "Answer", desc: "Your recommendation", color: T.accent },
+  ];
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      {items.map((item, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, background: `${item.color}10`, border: `1px solid ${item.color}25`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: `${item.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: item.color, fontFamily: "'Fraunces', serif", flexShrink: 0 }}>{item.letter}</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{item.label}</div>
+            <div style={{ fontSize: 12, color: T.textMuted }}>{item.desc}</div>
+          </div>
+          {i < 3 && <span style={{ marginLeft: "auto", color: T.textDim, fontSize: 14 }}>→</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisualMECE() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 0" }}>
+      <div style={{ display: "flex", gap: 8 }}>
+        {["Revenues ↑", "Costs ↓"].map((l,i)=>(
+          <div key={i} style={{ flex:1, background: T.accentSoft, border: `1px solid ${T.accent}30`, borderRadius: 12, padding: "16px", textAlign: "center" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>{l}</div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4 }}>No overlap ✓</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: "center", fontSize: 11, color: T.textMuted, fontStyle: "italic" }}>Mutually Exclusive + Collectively Exhaustive = MECE</div>
+    </div>
+  );
+}
+
+function VisualOneTenOne() {
+  const layers = [
+    { label: "1", title: "Key Message", desc: "Your conclusion — one sentence", color: T.accent, size: "large" },
+    { label: "10", title: "3-5 Arguments", desc: "Logically ordered support", color: T.secondary, size: "medium" },
+    { label: "1", title: "Core Data", desc: "Facts backing it all up", color: T.textMuted, size: "small" },
+  ];
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      {layers.map((l,i)=>(
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, background: `${l.color}12`, border: `1px solid ${l.color}25`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: `${l.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: l.color, fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>{l.label}</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{l.title}</div>
+            <div style={{ fontSize: 12, color: T.textMuted }}>{l.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisualSoWhat() {
+  const chain = ["Sales are down 15%", "We're losing market share", "Online competitors are winning", "We must invest in e-commerce"];
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
+      {chain.map((s,i)=>(
+        <React.Fragment key={i}>
+          <div style={{ background: i===chain.length-1 ? T.accentSoft : T.surface, border: `1px solid ${i===chain.length-1 ? T.accent+'30' : T.border}`, borderRadius: 10, padding: "10px 18px", fontSize: 13, color: i===chain.length-1 ? T.accent : T.textSoft, fontWeight: i===chain.length-1 ? 600 : 400, textAlign: "center", maxWidth: 280 }}>
+            {i===chain.length-1 && "🎯 "}{s}
+          </div>
+          {i < chain.length-1 && <div style={{ fontSize: 11, color: T.warn, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace" }}>↓ So what?</div>}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+function VisualSteelman() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "16px 0" }}>
+      <div style={{ background: T.errorSoft, border: `1px solid ${T.error}25`, borderRadius: 14, padding: "18px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>🥤</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.error }}>Straw Man</div>
+        <div style={{ fontSize: 13, color: T.textMuted, marginTop: 6, lineHeight: 1.5 }}>Weaken the opposing argument to make it easy to knock down</div>
+      </div>
+      <div style={{ background: T.successSoft, border: `1px solid ${T.success}25`, borderRadius: 14, padding: "18px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>⚔️</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.success }}>Steel Man</div>
+        <div style={{ fontSize: 13, color: T.textMuted, marginTop: 6, lineHeight: 1.5 }}>Build the STRONGEST version of the argument you disagree with</div>
+      </div>
+    </div>
+  );
+}
+
+function VisualAssumptions() {
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+      <div style={{ background: T.accentSoft, borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600 }}>📋 The Plan</div>
+      <div style={{ fontSize: 16, color: T.textDim }}>↓</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+        {["Timeline assumption", "Market assumption", "Resource assumption"].map((a,i) => (
+          <div key={i} style={{ background: T.warnSoft, border: `1px dashed ${T.warn}35`, borderRadius: 10, padding: "12px 16px", fontSize: 13, color: T.warn, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", textAlign: "center" }}>🔍 {a}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VisualFirstPrinciples() {
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+      <div style={{ background: T.errorSoft, borderRadius: 12, padding: "14px 24px", fontSize: 14, color: T.error, width: "100%", textAlign: "center" }}>
+        <span style={{ textDecoration: "line-through" }}>Convention: "Rockets cost $X billion"</span>
+      </div>
+      <div style={{ fontSize: 16, color: T.textDim }}>↓ Decompose</div>
+      <div style={{ background: T.secondarySoft, borderRadius: 12, padding: "14px 24px", fontSize: 14, color: T.secondary, width: "100%", textAlign: "center" }}>
+        Raw materials = only 2% of typical price
+      </div>
+      <div style={{ fontSize: 16, color: T.textDim }}>↓ Rebuild</div>
+      <div style={{ background: T.successSoft, borderRadius: 12, padding: "14px 24px", fontSize: 14, color: T.success, fontWeight: 600, width: "100%", textAlign: "center" }}>
+        🚀 New approach: 10x cheaper
+      </div>
+    </div>
+  );
+}
+
+function VisualSixHats() {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "16px 0" }}>
+      {[
+        { emoji: "⬜", label: "Facts", color: "#ddd" },
+        { emoji: "🟥", label: "Feelings", color: "#EF6B6B" },
+        { emoji: "⬛", label: "Risks", color: "#888" },
+        { emoji: "🟨", label: "Benefits", color: "#F0C246" },
+        { emoji: "🟩", label: "Creative", color: "#2DD4A8" },
+        { emoji: "🟦", label: "Process", color: "#5B8DEF" },
+      ].map((h,i)=>(
+        <div key={i} style={{ background: `${h.color}12`, borderRadius: 12, padding: "12px", textAlign: "center" }}>
+          <div style={{ fontSize: 22 }}>{h.emoji}</div>
+          <div style={{ fontSize: 12, color: h.color, fontWeight: 600, marginTop: 4 }}>{h.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisualAssessmentMap() {
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      {[
+        { firm: "McKinsey", test: "Solve (PSG)", color: "#5B8DEF", desc: "Game-based ecosystem + data" },
+        { firm: "BCG", test: "Pymetrics + Casey", color: "#2DD4A8", desc: "Brain games + chatbot case" },
+        { firm: "Bain", test: "SOVA / TestGorilla", color: "#F0C246", desc: "Rapid reasoning under pressure" },
+      ].map((f,i)=>(
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, background: `${f.color}10`, border: `1px solid ${f.color}20`, borderRadius: 14, padding: "14px 16px" }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: `${f.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: f.color, fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>{f.firm.slice(0,3).toUpperCase()}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{f.firm} → {f.test}</div>
+            <div style={{ fontSize: 12, color: T.textMuted }}>{f.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisualPymetrics() {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "16px 0" }}>
+      {[
+        { icon: "🎈", label: "Balloon Game", trait: "Risk" },
+        { icon: "💰", label: "Money Exchange", trait: "Fairness" },
+        { icon: "🗼", label: "Towers", trait: "Planning" },
+        { icon: "😊", label: "Faces", trait: "EQ" },
+        { icon: "🃏", label: "Cards", trait: "Learning" },
+        { icon: "🔢", label: "Digits", trait: "Attention" },
+      ].map((g,i)=>(
+        <div key={i} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px", textAlign: "center" }}>
+          <div style={{ fontSize: 22 }}>{g.icon}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginTop: 4 }}>{g.label}</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{g.trait}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisualCasey() {
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#F97316", fontFamily: "'IBM Plex Mono', monospace", marginBottom: 6 }}>🤖 Casey says:</div>
+        <div style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.5 }}>"A ferry company's revenue is flat despite tourism growing 20%. Analyze the data and recommend next steps."</div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        {["Multiple Choice", "Calculate", "Write", "60s Video"].map((t,i)=>(
+          <div key={i} style={{ flex: 1, background: `rgba(249,115,22,${0.08+i*0.03})`, borderRadius: 8, padding: "8px 4px", textAlign: "center", fontSize: 10, fontWeight: 600, color: "#F97316" }}>{t}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VisualSolveSova() {
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ background: T.secondarySoft, border: `1px solid ${T.secondary}20`, borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.secondary }}>McKinsey Solve</div>
+        <div style={{ fontSize: 13, color: T.textSoft, marginTop: 6, lineHeight: 1.5 }}>Build virtual ecosystems, solve pattern puzzles, analyze geological data. Tests systems thinking + creativity.</div>
+      </div>
+      <div style={{ background: T.warnSoft, border: `1px solid ${T.warn}20`, borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.warn }}>Bain SOVA</div>
+        <div style={{ fontSize: 13, color: T.textSoft, marginTop: 6, lineHeight: 1.5 }}>Rapid-fire numerical, verbal, and abstract reasoning. Speed is the #1 challenge — most people can't finish.</div>
+      </div>
+    </div>
+  );
+}
+
+function VisualRecursive() {
+  return (
+    <div style={{ padding: "16px 0", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+      <div style={{ background: T.accentSoft, border: `1px solid ${T.accent}30`, borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 600, color: T.accent }}>🏛 Main Recommendation</div>
+      <div style={{ display: "flex", gap: 8, width: "100%" }}>
+        {["Pillar A", "Pillar B", "Pillar C"].map((p,i)=>(
+          <div key={i} style={{ flex: 1, background: T.secondarySoft, border: `1px solid ${T.secondary}20`, borderRadius: 8, padding: "8px", textAlign: "center", fontSize: 11, color: T.secondary, fontWeight: 600 }}>{p}</div>
+        ))}
+      </div>
+      <div style={{ fontSize: 10, color: T.textDim }}>↓ Each pillar is its own pyramid ↓</div>
+      <div style={{ display: "flex", gap: 8, width: "100%" }}>
+        {[1,2,3].map(i=>(
+          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+            {[0.3,0.2,0.12].map((o,j)=>(
+              <div key={j} style={{ background: `${T.accent}${Math.round(o*255).toString(16).padStart(2,'0')}`, borderRadius: 4, padding: "4px", textAlign: "center", fontSize: 9, color: T.textMuted }}>{j===0?"Sub-point":j===1?"Data":"Detail"}</div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const VISUALS = {
+  origin: VisualOrigin, pyramid: VisualPyramid, scqa: VisualSCQA, mece: VisualMECE,
+  onetenone: VisualOneTenOne, sowhat: VisualSoWhat, steelman: VisualSteelman,
+  assumptions: VisualAssumptions, firstprinciples: VisualFirstPrinciples, sixhats: VisualSixHats,
+  recursive: VisualRecursive, assessmentmap: VisualAssessmentMap, pymetrics: VisualPymetrics,
+  casey: VisualCasey, solvesova: VisualSolveSova,
+};
+
+/* ═══════════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════════ */
+function App() {
+  const [screen, setScreen] = useState("home");
+  const [fw, setFw] = useState(null);
+  const [li, setLi] = useState(0);
+  const [selOpt, setSelOpt] = useState(null);
+  const [selMulti, setSelMulti] = useState([]);
+  const [revealed, setRevealed] = useState(false);
+  const [matchState, setMatchState] = useState({ selected: null, matched: [] });
+  const [dragOrder, setDragOrder] = useState([]);
+  const [dragRevealed, setDragRevealed] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
+
+  useEffect(() => { setFadeIn(false); const t = setTimeout(() => setFadeIn(true), 30); return () => clearTimeout(t); }, [screen, li]);
+
+  const reset = () => { setSelOpt(null); setSelMulti([]); setRevealed(false); setMatchState({ selected: null, matched: [] }); setDragOrder([]); setDragRevealed(false); };
+  const openFw = (f) => { setFw(f); setLi(0); reset(); setScreen("lesson"); };
+  const goNext = () => { if (li < fw.lessons.length - 1) { setLi(li + 1); reset(); window.scrollTo(0, 0); } else setScreen("complete"); };
+  const goBack = () => { if (screen === "lesson" && li > 0) { setLi(li - 1); reset(); window.scrollTo(0, 0); } else { setScreen("home"); setFw(null); setLi(0); reset(); } };
+
+  const lesson = fw?.lessons[li];
+  const Visual = lesson ? VISUALS[lesson.visual] : null;
+
+  // ═══ HOME ═══
+  if (screen === "home") return (
+    <div style={{ animation: "fadeIn 0.4s ease" }}>
+      {/* Hero */}
+      <div style={{ padding: "52px 24px 36px", textAlign: "center", position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 300, height: 300, background: `radial-gradient(circle, ${T.accent}08 0%, transparent 70%)`, pointerEvents: "none" }}/>
+        <div style={{ fontSize: 42, marginBottom: 14, filter: "saturate(0.8)" }}>💡</div>
+        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 36, fontWeight: 700, lineHeight: 1.1, marginBottom: 14, background: T.gradientText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ThinkSharp</h1>
+        <p style={{ color: T.textMuted, fontSize: 15, lineHeight: 1.65, maxWidth: 320, margin: "0 auto" }}>
+          Master the frameworks used by top consultants, founders, and strategic thinkers — in 5 minutes a day.
+        </p>
+      </div>
+
+      {/* Section: Frameworks */}
+      <div style={{ padding: "0 20px 10px" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.textDim, fontFamily: "'IBM Plex Mono', monospace" }}>Thinking Frameworks</div>
+      </div>
+      <div style={{ padding: "8px 20px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {FRAMEWORKS.filter(f => f.id !== "assessments").map(f => (
+          <div key={f.id} style={{ background: T.card, borderRadius: 16, padding: "18px 18px", cursor: "pointer", border: `1px solid ${T.border}`, transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14 }}
+            onClick={() => openFw(f)}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = `${f.color}35`; e.currentTarget.style.background = T.cardHover; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.card; }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: `${f.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, border: `1px solid ${f.color}25` }}>{f.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 600, marginBottom: 2 }}>{f.title}</div>
+              <div style={{ fontSize: 12, color: T.textMuted }}>{f.subtitle}</div>
+            </div>
+            <div style={{ color: T.textDim, fontSize: 10, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>{f.lessons.length}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Section: Assessment Prep */}
+      <div style={{ padding: "20px 20px 10px" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: T.textDim, fontFamily: "'IBM Plex Mono', monospace" }}>Consulting Assessment Prep</div>
+      </div>
+      <div style={{ padding: "8px 20px 48px" }}>
+        {(() => { const f = FRAMEWORKS.find(x => x.id === "assessments"); return (
+          <div style={{ background: `linear-gradient(135deg, ${T.card}, ${T.surfaceRaised})`, borderRadius: 18, padding: "22px 20px", cursor: "pointer", border: `1px solid ${f.color}20`, transition: "all 0.2s" }}
+            onClick={() => openFw(f)}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = `${f.color}40`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = `${f.color}20`; }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: `${f.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, border: `1px solid ${f.color}25` }}>{f.icon}</div>
+              <div>
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 600 }}>{f.title}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>{f.subtitle}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {["Pymetrics", "Casey", "SOVA", "Solve"].map(t => (
+                <span key={t} style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: `${f.color}15`, color: f.color, fontFamily: "'IBM Plex Mono', monospace" }}>{t}</span>
+              ))}
+              <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: T.surface, color: T.textMuted }}>{f.lessons.length} lessons</span>
+            </div>
+          </div>
+        ); })()}
+      </div>
+    </div>
+  );
+
+  // ═══ COMPLETE ═══
+  if (screen === "complete" && fw) return (
+    <div style={{ textAlign: "center", padding: "80px 24px", animation: "slideUp 0.5s ease" }}>
+      <div style={{ fontSize: 56, marginBottom: 20 }}>🎯</div>
+      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, marginBottom: 14, background: T.gradientText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Module Complete!</h2>
+      <p style={{ color: T.textMuted, fontSize: 15, lineHeight: 1.6, margin: "0 auto 32px", maxWidth: 300 }}>
+        You've finished <strong style={{ color: T.text }}>{fw.title}</strong>. The more you practice, the more natural these thinking patterns become.
+      </p>
+      <div style={{ background: T.surface, borderRadius: 16, padding: 24, marginBottom: 32, border: `1px solid ${T.border}`, display: "inline-block", minWidth: 200 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: T.textDim, fontFamily: "'IBM Plex Mono', monospace" }}>Lessons completed</div>
+        <div style={{ fontSize: 40, fontWeight: 700, color: fw.color, marginTop: 8, fontFamily: "'Fraunces', serif" }}>{fw.lessons.length}</div>
+      </div>
+      <div><button style={{ background: fw.color, color: "#fff", border: "none", borderRadius: 14, padding: "16px 32px", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%", boxShadow: `0 4px 24px ${fw.color}35` }} onClick={() => { setScreen("home"); setFw(null); }}>Back to Home</button></div>
+    </div>
+  );
+
+  // ═══ LESSON ═══
+  if (screen !== "lesson" || !fw || !lesson) return null;
+
+  const canContinue =
+    lesson.type === "learn" ||
+    (lesson.type === "exercise" && revealed) ||
+    (lesson.matchPairs && matchState.matched.length === lesson.matchPairs.length) ||
+    (lesson.pieces && dragRevealed);
+
+  return (
+    <div>
+      {/* Top bar */}
+      <div style={{ display: "flex", alignItems: "center", padding: "14px 20px", position: "sticky", top: 0, zIndex: 100, background: "rgba(17,17,24,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${T.border}` }}>
+        <button style={{ background: "none", border: "none", color: T.textMuted, fontSize: 22, cursor: "pointer", padding: "4px 8px 4px 0", marginRight: 8 }} onClick={goBack}>‹</button>
+        <span style={{ fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 600, color: T.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fw.title}</span>
+        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: `${fw.color}18`, color: fw.color, fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>{li + 1}/{fw.lessons.length}</span>
+      </div>
+
+      {/* Progress */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 20px 0" }}>
+        {fw.lessons.map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < li ? fw.color : i === li ? `${fw.color}60` : T.border, transition: "all 0.3s" }} />
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "24px 20px 120px", opacity: fadeIn ? 1 : 0, transform: fadeIn ? "translateY(0)" : "translateY(8px)", transition: "all 0.3s ease" }}>
+
+        {/* ─── LEARN ─── */}
+        {lesson.type === "learn" && (
+          <div style={{ background: T.surface, borderRadius: 20, padding: "26px 22px", border: `1px solid ${T.border}` }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, marginBottom: 14, lineHeight: 1.25 }}>{lesson.title}</h2>
+            <p style={{ fontSize: 15, lineHeight: 1.75, color: T.textSoft, marginBottom: lesson.extraContent || lesson.bullets ? 14 : 18 }}>{lesson.content}</p>
+
+            {lesson.bullets && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                {lesson.bullets.map((b, i) => (
+                  <div key={i} style={{ background: T.surfaceRaised, borderRadius: 12, padding: "12px 16px", borderLeft: `3px solid ${fw.color}50` }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 3 }}>{b.label}</div>
+                    <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{b.desc}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {lesson.extraContent && <p style={{ fontSize: 14, lineHeight: 1.7, color: T.textMuted, marginBottom: 18 }}>{lesson.extraContent}</p>}
+
+            {Visual && <Visual />}
+
+            <div style={{ background: `${fw.color}10`, border: `1px solid ${fw.color}20`, borderRadius: 14, padding: "16px 18px", fontSize: 14, lineHeight: 1.6, color: T.text }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: fw.color, marginBottom: 6, fontFamily: "'IBM Plex Mono', monospace" }}>💡 Key insight</div>
+              {lesson.keyInsight}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SINGLE SELECT ─── */}
+        {lesson.type === "exercise" && lesson.options && !lesson.multiSelect && !lesson.matchPairs && (
+          <>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, marginBottom: 12, lineHeight: 1.25 }}>{lesson.title}</h2>
+            <div style={{ background: T.surface, borderRadius: 16, padding: "18px 18px", marginBottom: 18, border: `1px solid ${T.border}`, fontSize: 15, lineHeight: 1.65, color: T.textSoft }}>{lesson.scenario}</div>
+            {lesson.options.map((opt, i) => {
+              const sel = selOpt === i;
+              let bg = T.surface, bdr = T.border;
+              if (sel && !revealed) { bg = T.accentSoft; bdr = `${T.accent}40`; }
+              if (revealed && sel && opt.correct) { bg = T.successSoft; bdr = `${T.success}40`; }
+              if (revealed && sel && !opt.correct) { bg = T.errorSoft; bdr = `${T.error}40`; }
+              if (revealed && !sel && opt.correct) { bg = T.successSoft; bdr = `${T.success}25`; }
+              return (
+                <div key={i}>
+                  <button style={{ width: "100%", textAlign: "left", background: bg, border: `1.5px solid ${bdr}`, borderRadius: 14, padding: "16px 18px", marginBottom: 8, cursor: revealed ? "default" : "pointer", transition: "all 0.2s", color: T.text, fontSize: 14, lineHeight: 1.55 }}
+                    onClick={() => { if (!revealed) setSelOpt(i); }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, color: revealed ? (opt.correct ? T.success : sel ? T.error : T.textDim) : (sel ? T.accent : T.textMuted), marginBottom: 4, display: "block" }}>
+                      {revealed ? (opt.correct ? "✓" : sel ? "✗" : "") : ""} Option {opt.label}
+                    </span>
+                    <div>{opt.structure}</div>
+                  </button>
+                  {revealed && (sel || (!lesson.options[selOpt]?.correct && opt.correct)) && (
+                    <div style={{ background: opt.correct ? T.successSoft : T.errorSoft, border: `1px solid ${opt.correct ? T.success : T.error}30`, borderRadius: 14, padding: "14px 16px", marginBottom: 10, fontSize: 14, lineHeight: 1.55, color: T.text, animation: "fadeIn 0.3s" }}>{opt.feedback}</div>
+                  )}
+                </div>
+              );
+            })}
+            {selOpt !== null && !revealed && (
+              <button style={{ background: fw.color, color: "#fff", border: "none", borderRadius: 14, padding: "16px", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%", marginTop: 8, boxShadow: `0 4px 24px ${fw.color}35` }}
+                onClick={() => setRevealed(true)}>Check Answer</button>
+            )}
+          </>
+        )}
+
+        {/* ─── MULTI SELECT ─── */}
+        {lesson.type === "exercise" && lesson.multiSelect && (
+          <>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{lesson.title}</h2>
+            <div style={{ background: T.surface, borderRadius: 16, padding: "18px", marginBottom: 18, border: `1px solid ${T.border}`, fontSize: 15, lineHeight: 1.65, color: T.textSoft }}>
+              {lesson.scenario}
+              <div style={{ marginTop: 8, fontSize: 12, color: T.accent, fontWeight: 600 }}>Select all that apply</div>
+            </div>
+            {lesson.options.map((opt, i) => {
+              const sel = selMulti.includes(i);
+              let bg = T.surface, bdr = T.border;
+              if (sel && !revealed) { bg = T.accentSoft; bdr = `${T.accent}40`; }
+              if (revealed && sel && opt.correct) { bg = T.successSoft; bdr = `${T.success}40`; }
+              if (revealed && sel && !opt.correct) { bg = T.errorSoft; bdr = `${T.error}40`; }
+              if (revealed && !sel && opt.correct) { bg = T.successSoft; bdr = `${T.success}25`; }
+              return (
+                <div key={i}>
+                  <button style={{ width: "100%", textAlign: "left", background: bg, border: `1.5px solid ${bdr}`, borderRadius: 14, padding: "16px 18px", marginBottom: 8, cursor: revealed ? "default" : "pointer", color: T.text, fontSize: 14, lineHeight: 1.55 }}
+                    onClick={() => { if (revealed) return; setSelMulti(p => p.includes(i) ? p.filter(x=>x!==i) : [...p,i]); }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, color: revealed ? (opt.correct ? T.success : sel ? T.error : T.textDim) : (sel ? T.accent : T.textMuted), marginBottom: 4, display: "block" }}>
+                      {revealed ? (opt.correct ? "✓" : sel ? "✗" : "") : (sel ? "☑" : "☐")} Option {opt.label}
+                    </span>
+                    {opt.structure}
+                  </button>
+                  {revealed && (sel || opt.correct) && <div style={{ background: opt.correct ? T.successSoft : T.errorSoft, border: `1px solid ${opt.correct ? T.success : T.error}30`, borderRadius: 14, padding: "14px 16px", marginBottom: 10, fontSize: 14, lineHeight: 1.55, color: T.text }}>{opt.feedback}</div>}
+                </div>
+              );
+            })}
+            {selMulti.length > 0 && !revealed && (
+              <button style={{ background: fw.color, color: "#fff", border: "none", borderRadius: 14, padding: "16px", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%", marginTop: 8, boxShadow: `0 4px 24px ${fw.color}35` }}
+                onClick={() => setRevealed(true)}>Check Answers</button>
+            )}
+          </>
+        )}
+
+        {/* ─── MATCHING ─── */}
+        {lesson.type === "exercise" && lesson.matchPairs && (
+          <>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{lesson.title}</h2>
+            <div style={{ background: T.surface, borderRadius: 16, padding: "18px", marginBottom: 18, border: `1px solid ${T.border}`, fontSize: 15, lineHeight: 1.65, color: T.textSoft }}>{lesson.scenario}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: T.textDim, marginBottom: 8, fontFamily: "'IBM Plex Mono', monospace" }}>Statements</div>
+            {lesson.matchPairs.map((p, i) => (
+              <div key={`s${i}`} style={{ background: matchState.matched.includes(i) ? T.successSoft : matchState.selected===i ? T.accentSoft : T.surface, border: `1.5px solid ${matchState.matched.includes(i) ? `${T.success}35` : matchState.selected===i ? `${T.accent}40` : T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 8, cursor: matchState.matched.includes(i) ? "default" : "pointer", fontSize: 14, lineHeight: 1.5, color: T.text }}
+                onClick={() => { if (!matchState.matched.includes(i)) setMatchState(p2 => ({...p2, selected: p2.selected===i ? null : i})); }}>
+                {matchState.matched.includes(i) && <span style={{ color: T.success, marginRight: 8 }}>✓</span>}{p.statement}
+              </div>
+            ))}
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: T.textDim, margin: "16px 0 8px", fontFamily: "'IBM Plex Mono', monospace" }}>Hats</div>
+            {lesson.matchPairs.map((p, i) => (
+              <div key={`h${i}`} style={{ background: matchState.matched.includes(i) ? T.successSoft : T.surface, border: `1.5px solid ${matchState.matched.includes(i) ? `${T.success}35` : T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 8, cursor: matchState.selected!==null && !matchState.matched.includes(i) ? "pointer" : "default", fontSize: 14, color: T.text, opacity: matchState.matched.includes(i) ? 0.5 : 1, display: "flex", alignItems: "center", gap: 10 }}
+                onClick={() => { if (matchState.matched.includes(i) || matchState.selected===null) return; if (matchState.selected===i) setMatchState(p2 => ({selected:null, matched:[...p2.matched,i]})); else setMatchState(p2 => ({...p2, selected:null})); }}>
+                <span style={{ width: 12, height: 12, borderRadius: "50%", background: p.color, display: "inline-block", border: p.color==="#FFFFFF" ? `1.5px solid ${T.textDim}` : "none", flexShrink: 0 }}/>{p.hat}
+              </div>
+            ))}
+            {matchState.matched.length === lesson.matchPairs.length && (
+              <div style={{ background: T.successSoft, border: `1px solid ${T.success}30`, borderRadius: 14, padding: "14px 16px", marginTop: 8, fontSize: 14, lineHeight: 1.55, color: T.text }}>Perfect matching! Each hat lets you focus on one perspective at a time.</div>
+            )}
+          </>
+        )}
+
+        {/* ─── DRAG / REORDER ─── */}
+        {lesson.type === "exercise" && lesson.pieces && (
+          <>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{lesson.title}</h2>
+            <div style={{ background: T.surface, borderRadius: 16, padding: "18px", marginBottom: 18, border: `1px solid ${T.border}`, fontSize: 15, lineHeight: 1.65, color: T.textSoft }}>{lesson.scenario}</div>
+            {(dragOrder.length > 0 ? dragOrder : lesson.scrambledOrder.map(i => lesson.pieces[i])).map(piece => (
+              <div key={piece.id} style={{ background: T.surface, border: `1.5px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: T.text, lineHeight: 1.5 }}>
+                <span style={{ color: T.textDim, fontSize: 16, flexShrink: 0 }}>☰</span>
+                <span style={{ flex: 1 }}>{piece.text}</span>
+                {dragRevealed && <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: piece.level===0 ? `${T.accent}20` : `${T.secondary}15`, color: piece.level===0 ? T.accent : T.secondary, fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>{piece.level===0 ? "Main Point" : "Support"}</span>}
+              </div>
+            ))}
+            {!dragRevealed ? (
+              <button style={{ background: fw.color, color: "#fff", border: "none", borderRadius: 14, padding: "16px", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%", marginTop: 8, boxShadow: `0 4px 24px ${fw.color}35` }}
+                onClick={() => { setDragRevealed(true); setDragOrder([...lesson.pieces].sort((a,b)=>a.order-b.order)); }}>Show Correct Order</button>
+            ) : (
+              <div style={{ background: T.successSoft, border: `1px solid ${T.success}30`, borderRadius: 14, padding: "14px 16px", marginTop: 8, fontSize: 14, lineHeight: 1.55, color: T.text }}>Lead with the recommendation, then group your MECE supporting reasons: cost savings, competitive pressure, and reliability.</div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Bottom bar */}
+      {canContinue && (
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, padding: "16px 20px 32px", background: "linear-gradient(transparent, rgba(17,17,24,0.97) 30%)", zIndex: 100 }}>
+          <button style={{ background: fw.color, color: "#fff", border: "none", borderRadius: 14, padding: "16px", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%", boxShadow: `0 4px 24px ${fw.color}35` }} onClick={goNext}>
+            {li < fw.lessons.length - 1 ? "Continue →" : "Complete ✓"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
