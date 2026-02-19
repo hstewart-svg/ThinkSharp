@@ -1,2 +1,2 @@
 # ThinkSharp
-ThinkSharp app
+Critical Thinking Trainer
